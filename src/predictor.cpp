@@ -30,7 +30,7 @@ int bpType;            // Branch Prediction Type
 int verbose;
 
 int tournement_global_bits=16;
-int tournement_local_bits=13;
+int tournement_local_bits=12;
 
 
 int ghistory;
