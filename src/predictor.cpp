@@ -393,7 +393,9 @@ void train_custom(uint32_t pc, uint8_t outcome)
 
 
   // Update state of entry in bht based on outcome
-  switch (local_predict)
+   
+   if(bht_tournament_choice[ghistory_lower_bits]<2){
+      switch (local_predict)
   {
   case WN:
     bht_tournament_local[pattern] = (outcome == TAKEN) ? WT : SN;
@@ -412,7 +414,9 @@ void train_custom(uint32_t pc, uint8_t outcome)
     break;
   }
 
-    switch (global_predict)
+   }
+   else{
+        switch (global_predict)
   {
   case WN:
     bht_tournament_corele[index] = (outcome == TAKEN) ? WT : SN;
@@ -430,6 +434,13 @@ void train_custom(uint32_t pc, uint8_t outcome)
     printf("global predict!\n");
     break;
   }
+
+   }
+
+
+
+
+
 
 
 
