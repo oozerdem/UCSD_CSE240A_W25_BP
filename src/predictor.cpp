@@ -524,8 +524,8 @@ void cleanup_tournament()
 }
 
 void cleanup_custom()
-cleanup_tournament()
-{
+{cleanup_tournament();
+
 
 
 
