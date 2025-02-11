@@ -33,7 +33,7 @@ int tournement_global_bits=16;
 int tournement_local_bits=13;
 
 
-
+int ghistory;
 
 //------------------------------------//
 //      Predictor Data Structures     //
