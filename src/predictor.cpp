@@ -29,10 +29,10 @@ int ghistoryBits = 17; // Number of bits used for Global History
 int bpType;            // Branch Prediction Type
 int verbose;
 
-int tournement_global_bits=16;
+int tournement_global_bits=15;
 int tournement_local_bits=13;
-int tournement_pattern_bits=12;
-int tournement_choice_bits=13;
+int tournement_pattern_bits=13;
+int tournement_choice_bits=15;
 
 
 
@@ -112,8 +112,8 @@ uint8_t tournament_predict(uint32_t pc)
   int pattern_entries=1<<tournement_pattern_bits;
 
   uint32_t pc_lower_bits = pc & (local_entries- 1);
-  uint32_t ghistory_lower_bits_choice = ghistory & (choice_entries - 1);
-  uint32_t ghistory_lower_bits_corele = ghistory & (global_entries - 1);
+  uint32_t ghistory_lower_bits_choice = (pc^ghistory) & (choice_entries - 1);
+  uint32_t ghistory_lower_bits_corele = (pc^ghistory) & (global_entries - 1);
   uint16_t pattern = pht_tournament_local[pc_lower_bits]& (pattern_entries - 1);
 
   uint8_t local_predict = bht_tournament_local[pattern];
@@ -177,8 +177,8 @@ void train_tournament(uint32_t pc, uint8_t outcome)
   int pattern_entries=1<<tournement_pattern_bits;
 
   uint32_t pc_lower_bits = pc & (local_entries- 1);
-  uint32_t ghistory_lower_bits_choice = ghistory & (choice_entries - 1);
-  uint32_t ghistory_lower_bits_corele = ghistory & (global_entries - 1);
+  uint32_t ghistory_lower_bits_choice = (pc^ghistory)& (choice_entries - 1);
+  uint32_t ghistory_lower_bits_corele = (pc^ghistory) & (global_entries - 1);
   uint16_t pattern = pht_tournament_local[pc_lower_bits]& (pattern_entries - 1);
 
   uint8_t local_predict = bht_tournament_local[pattern];
