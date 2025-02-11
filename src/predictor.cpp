@@ -29,9 +29,9 @@ int ghistoryBits = 17; // Number of bits used for Global History
 int bpType;            // Branch Prediction Type
 int verbose;
 
-int tournement_global_bits=15;
-int tournement_local_bits=13;
-int tournement_pattern_bits=13;
+int tournement_global_bits=16;
+int tournement_local_bits=12;
+int tournement_pattern_bits=12;
 int tournement_choice_bits=15;
 
 
@@ -426,9 +426,12 @@ void train_custom(uint32_t pc, uint8_t outcome)
 
 
 
-   if(bht_tournament_choice[ghistory_lower_bits_choice]<2){
+ if(bht_tournament_choice[ghistory_lower_bits_choice]<2){
+
+
       switch (local_predict)
   {
+
   case WN:
     bht_tournament_local[pattern] = (outcome == TAKEN) ? WT : SN;
     break;
@@ -445,9 +448,11 @@ void train_custom(uint32_t pc, uint8_t outcome)
     printf("local predict!\n");
     break;
   }
-
    }
    else{
+
+  
+
         switch (global_predict)
   {
   case WN:
@@ -466,14 +471,17 @@ void train_custom(uint32_t pc, uint8_t outcome)
     printf("global predict!\n");
     break;
   }
-
-   }
+ }
+   
 
 
 
   // Update history register
   ghistory = ((ghistory << 1) | outcome);
   pht_tournament_local[pc_lower_bits]= ((pattern << 1) | outcome);
+
+
+  
 
 }
 
