@@ -35,6 +35,15 @@ int tournement_pattern_bits=12;
 int tournement_choice_bits=15;
 
 
+int custom_global_bits=15;
+int custom_local_bits=12;
+int custom_pattern_bits=14;
+int custom_choice_bits=15;
+
+
+
+
+
 
 
 
@@ -58,6 +67,13 @@ uint16_t *pht_tournament_local;
 uint8_t *bht_tournament_local;
 uint8_t *bht_tournament_corele;
 uint8_t *bht_tournament_choice;
+
+uint8_t *bht_bimode_choice;
+uint8_t *bht_bimode_nt;
+uint8_t *bht_bimode_tk;
+
+
+
 
 
 
@@ -268,15 +284,17 @@ void train_tournament(uint32_t pc, uint8_t outcome)
 
 void init_custom()
 {
-  int global_entries = 1 << tournement_global_bits;
-  int local_entries = 1 << tournement_local_bits;
-  int choice_entries=1<<tournement_choice_bits;
-  int pattern_entries=1<<tournement_pattern_bits;
+  int global_entries = 1 << custom_global_bits;
+  int local_entries = 1 << custom_local_bits;
+  int choice_entries=1<< custom_choice_bits;
+  int pattern_entries=1<<custom_pattern_bits;
 
   pht_tournament_local=(uint16_t *)malloc(local_entries * sizeof(uint16_t));
 
   bht_tournament_local= (uint8_t *)malloc(pattern_entries * sizeof(uint8_t));
-  bht_tournament_corele = (uint8_t *)malloc(global_entries* sizeof(uint8_t));
+  bht_bimode_choice = (uint8_t *)malloc((global_entries)* sizeof(uint8_t));
+  bht_bimode_tk = (uint8_t *)malloc((global_entries)* sizeof(uint8_t));
+  bht_bimode_nt = (uint8_t *)malloc((global_entries)* sizeof(uint8_t));
   bht_tournament_choice = (uint8_t *)malloc(choice_entries * sizeof(uint8_t));
 
   int i = 0;
@@ -290,9 +308,15 @@ void init_custom()
     bht_tournament_local[i] = WN;
     
   }
-    for (i = 0; i < global_entries; i++)
+    for (i = 0; i < (global_entries); i++)
   {
-    bht_tournament_corele[i] = WN;
+    bht_bimode_choice[i] = WN;
+    
+  }
+      for (i = 0; i < (global_entries); i++)
+  {
+    bht_bimode_nt[i] = WN;
+    bht_bimode_tk[i] = WT;
     
   }
     for (i = 0; i < choice_entries; i++)
@@ -313,10 +337,10 @@ void init_custom()
 uint8_t custom_predict(uint32_t pc)
 {
   // get lower ghistoryBits of pc
-  int global_entries = 1 << tournement_global_bits;
-  int local_entries = 1 << tournement_local_bits;
-  int choice_entries=1<<tournement_choice_bits;
-  int pattern_entries=1<<tournement_pattern_bits;
+  int global_entries = 1 << custom_global_bits;
+  int local_entries = 1 << custom_local_bits;
+  int choice_entries=1<<custom_choice_bits;
+  int pattern_entries=1<<custom_pattern_bits;
 
   uint32_t pc_lower_bits = pc & (local_entries- 1);
   uint32_t ghistory_lower_bits_choice = (pc^ghistory) & (choice_entries - 1);
@@ -324,14 +348,20 @@ uint8_t custom_predict(uint32_t pc)
   uint16_t pattern = pht_tournament_local[pc_lower_bits]& (pattern_entries - 1);
 
   uint8_t local_predict = bht_tournament_local[pattern];
-  uint8_t global_predict = bht_tournament_corele[ghistory_lower_bits_corele];
+
+
+  uint8_t bimode_choice = bht_bimode_choice[(ghistory_lower_bits_corele)];
+  uint8_t bimode_tk = bht_bimode_tk[(ghistory_lower_bits_corele)];
+  uint8_t bimode_nt = bht_bimode_nt[(ghistory_lower_bits_corele)];
+
+  uint8_t global_predict=((bimode_choice>1) ? bimode_tk:bimode_nt);
 
   uint8_t selected=0;
 
 
 
 
-
+  
 
   switch (bht_tournament_choice[ghistory_lower_bits_choice])
   {
@@ -385,10 +415,10 @@ uint8_t custom_predict(uint32_t pc)
 void train_custom(uint32_t pc, uint8_t outcome)
 {
   // get lower ghistoryBits of pc
-  int global_entries = 1 << tournement_global_bits;
-  int local_entries = 1 << tournement_local_bits;
-  int choice_entries=1<<tournement_choice_bits;
-  int pattern_entries=1<<tournement_pattern_bits;
+  int global_entries = 1 << custom_global_bits;
+  int local_entries = 1 << custom_local_bits;
+  int choice_entries=1<<custom_choice_bits;
+  int pattern_entries=1<<custom_pattern_bits;
 
   uint32_t pc_lower_bits = pc & (local_entries- 1);
   uint32_t ghistory_lower_bits_choice = (pc^ghistory) & (choice_entries - 1);
@@ -396,7 +426,10 @@ void train_custom(uint32_t pc, uint8_t outcome)
   uint16_t pattern = pht_tournament_local[pc_lower_bits]& (pattern_entries - 1);
 
   uint8_t local_predict = bht_tournament_local[pattern];
-  uint8_t global_predict = bht_tournament_corele[ghistory_lower_bits_corele];
+  uint8_t bimode_choice = bht_bimode_choice[(ghistory_lower_bits_corele)];
+  uint8_t bimode_tk = bht_bimode_tk[(ghistory_lower_bits_corele)];
+  uint8_t bimode_nt = bht_bimode_nt[(ghistory_lower_bits_corele)];
+  uint8_t global_predict=((bimode_choice>1) ? bimode_tk:bimode_nt);
 
   uint8_t selected=0;
 
@@ -451,26 +484,78 @@ void train_custom(uint32_t pc, uint8_t outcome)
    }
    else{
 
-  
-
-        switch (global_predict)
+    if(!(((global_predict>1 ? TAKEN:NOTTAKEN)==outcome)&&(((global_predict>1 ? TAKEN:NOTTAKEN))!=((bimode_choice>1 ? TAKEN:NOTTAKEN))))){
+      switch (bimode_choice)
   {
   case WN:
-    bht_tournament_corele[ghistory_lower_bits_corele] = (outcome == TAKEN) ? WT : SN;
+   bht_bimode_choice[(ghistory_lower_bits_corele)]= (outcome == TAKEN) ? WT : SN;
     break;
   case SN:
-    bht_tournament_corele[ghistory_lower_bits_corele] = (outcome == TAKEN) ? WN : SN;
+   bht_bimode_choice[(ghistory_lower_bits_corele)] = (outcome == TAKEN) ? WN : SN;
     break;
   case WT:
-    bht_tournament_corele[ghistory_lower_bits_corele]= (outcome == TAKEN) ? ST : WN;
+    bht_bimode_choice[(ghistory_lower_bits_corele)]= (outcome == TAKEN) ? ST : WN;
     break;
   case ST:
-    bht_tournament_corele[ghistory_lower_bits_corele]= (outcome == TAKEN) ? ST : WT;
+    bht_bimode_choice[(ghistory_lower_bits_corele)]= (outcome == TAKEN) ? ST : WT;
     break;
   default:
     printf("global predict!\n");
     break;
   }
+    }
+
+    if(bimode_choice>1)
+  {
+              switch (bimode_tk)
+  {
+  case WN:
+    bht_bimode_tk[(ghistory_lower_bits_corele)]= (outcome == TAKEN) ? WT : SN;
+    break;
+  case SN:
+    bht_bimode_tk[(ghistory_lower_bits_corele)] = (outcome == TAKEN) ? WN : SN;
+    break;
+  case WT:
+    bht_bimode_tk[(ghistory_lower_bits_corele)]= (outcome == TAKEN) ? ST : WN;
+    break;
+  case ST:
+    bht_bimode_tk[(ghistory_lower_bits_corele)]= (outcome == TAKEN) ? ST : WT;
+    break;
+  default:
+    printf("global predict!\n");
+    break;
+  }
+
+  }
+  else{
+              switch (bimode_nt)
+  {
+  case WN:
+    bht_bimode_nt[(ghistory_lower_bits_corele)]= (outcome == TAKEN) ? WT : SN;
+    break;
+  case SN:
+    bht_bimode_nt[(ghistory_lower_bits_corele)] = (outcome == TAKEN) ? WN : SN;
+    break;
+  case WT:
+    bht_bimode_nt[(ghistory_lower_bits_corele)]= (outcome == TAKEN) ? ST : WN;
+    break;
+  case ST:
+    bht_bimode_nt[(ghistory_lower_bits_corele)]= (outcome == TAKEN) ? ST : WT;
+    break;
+  default:
+    printf("global predict!\n");
+    break;
+  }
+
+  }
+
+
+
+
+
+  
+
+
  }
    
 
