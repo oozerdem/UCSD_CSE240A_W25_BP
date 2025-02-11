@@ -12,9 +12,9 @@
 //
 // TODO:Student Information
 //
-const char *studentName = "TODO";
-const char *studentID = "TODO";
-const char *email = "TODO";
+const char *studentName = "Ozgur";
+const char *studentID = "A69033985";
+const char *email = "oozerdem@ucsd.edu";
 
 //------------------------------------//
 //      Predictor Configuration       //
@@ -31,6 +31,9 @@ int verbose;
 
 int tournement_global_bits=16;
 int tournement_local_bits=12;
+
+
+
 
 
 int ghistory;
@@ -90,7 +93,7 @@ uint8_t tournament_predict(uint32_t pc)
 {
   // get lower ghistoryBits of pc
   uint32_t global_entries = 1 << tournement_global_bits;
-  uint32_t local_entries = 1 << tournement_local_bits;
+  uint32_t local_entries = 1 << (tournement_local_bits);
   uint32_t pc_lower_bits = pc & (local_entries- 1);
   uint32_t ghistory_lower_bits = ghistory & (global_entries - 1);
 
@@ -242,33 +245,11 @@ void train_tournament(uint32_t pc, uint8_t outcome)
 
 
 
-//------------------------------------//
-//        Predictor Functions         //
-//------------------------------------//
-
-// Initialize the predictor
-//
-
-// gshare functions
-
-
-//inits
-void init_gshare()
-{
-  int bht_entries = 1 << ghistoryBits;
-  bht_gshare = (uint8_t *)malloc(bht_entries * sizeof(uint8_t));
-  int i = 0;
-  for (i = 0; i < bht_entries; i++)
-  {
-    bht_gshare[i] = WN;
-  }
-  ghistory = 0;
-}
 
 void init_custom()
 {
   int global_entries = 1 << tournement_global_bits;
-  int local_entries = 1 << tournement_local_bits;
+  int local_entries = 1 << (tournement_local_bits+1);
 
   pht_tournament_local=(uint16_t *)malloc(local_entries * sizeof(uint16_t));
 
@@ -297,42 +278,20 @@ void init_custom()
 //predicts
 
 
-
-uint8_t gshare_predict(uint32_t pc)
-{
-  // get lower ghistoryBits of pc
-  uint32_t bht_entries = 1 << ghistoryBits;
-  uint32_t pc_lower_bits = pc & (bht_entries - 1);
-  uint32_t ghistory_lower_bits = ghistory & (bht_entries - 1);
-  uint32_t index = pc_lower_bits ^ ghistory_lower_bits;
-  switch (bht_gshare[index])
-  {
-  case WN:
-    return NOTTAKEN;
-  case SN:
-    return NOTTAKEN;
-  case WT:
-    return TAKEN;
-  case ST:
-    return TAKEN;
-  default:
-    printf("Warning: Undefined state of entry in GSHARE BHT!\n");
-    return NOTTAKEN;
-  }
-}
-
 uint8_t custom_predict(uint32_t pc)
 {
   // get lower ghistoryBits of pc
   uint32_t global_entries = 1 << tournement_global_bits;
-  uint32_t local_entries = 1 << tournement_local_bits;
+  uint32_t local_entries = 1 << (tournement_local_bits+1);
   uint32_t pc_lower_bits = pc & (local_entries- 1);
-  uint32_t ghistory_lower_bits = (pc ^ghistory) & (global_entries - 1);
+  uint32_t ghistory_lower_bits = (ghistory) & (global_entries - 1);
+  uint32_t index= (pc ^ghistory) & (global_entries - 1);
 
-  uint16_t pattern = pht_tournament_local[pc_lower_bits]& (local_entries - 1);
+
+  uint16_t pattern = pht_tournament_local[pc_lower_bits]& ((local_entries >> 1) - 1);
 
   uint8_t local_predict = bht_tournament_local[pattern];
-  uint8_t global_predict = bht_tournament_corele[ghistory_lower_bits];
+  uint8_t global_predict = bht_tournament_corele[index];
 
   uint8_t selected=0;
 
@@ -394,15 +353,16 @@ void train_custom(uint32_t pc, uint8_t outcome)
 {
   // get lower ghistoryBits of pc
   uint32_t global_entries = 1 << tournement_global_bits;
-  uint32_t local_entries = 1 << tournement_local_bits;
+  uint32_t local_entries = 1 << (tournement_local_bits+1);
   uint32_t pc_lower_bits = pc & (local_entries- 1);
-  //uint32_t ghistory_lower_bits = ghistory & (global_entries - 1);
-  uint32_t ghistory_lower_bits = (pc ^ghistory) & (global_entries - 1);
+  uint32_t ghistory_lower_bits = (ghistory) & (global_entries - 1);
+  uint32_t index= (pc ^ghistory) & (global_entries - 1);
 
-  uint16_t pattern = pht_tournament_local[pc_lower_bits]& (local_entries- 1);
+
+  uint16_t pattern = pht_tournament_local[pc_lower_bits]& ((local_entries >> 1)- 1);
 
   uint8_t local_predict = bht_tournament_local[pattern];
-  uint8_t global_predict = bht_tournament_corele[ghistory_lower_bits];
+  uint8_t global_predict = bht_tournament_corele[index];
 
   uint8_t selected=0;
 
@@ -455,16 +415,16 @@ void train_custom(uint32_t pc, uint8_t outcome)
     switch (global_predict)
   {
   case WN:
-    bht_tournament_corele[ghistory_lower_bits] = (outcome == TAKEN) ? WT : SN;
+    bht_tournament_corele[index] = (outcome == TAKEN) ? WT : SN;
     break;
   case SN:
-    bht_tournament_corele[ghistory_lower_bits] = (outcome == TAKEN) ? WN : SN;
+    bht_tournament_corele[index] = (outcome == TAKEN) ? WN : SN;
     break;
   case WT:
-    bht_tournament_corele[ghistory_lower_bits]= (outcome == TAKEN) ? ST : WN;
+    bht_tournament_corele[index]= (outcome == TAKEN) ? ST : WN;
     break;
   case ST:
-    bht_tournament_corele[ghistory_lower_bits]= (outcome == TAKEN) ? ST : WT;
+    bht_tournament_corele[index]= (outcome == TAKEN) ? ST : WT;
     break;
   default:
     printf("global predict!\n");
@@ -479,18 +439,52 @@ void train_custom(uint32_t pc, uint8_t outcome)
 
 }
 
+void init_gshare()
+{
+  int bht_entries = 1 << ghistoryBits;
+  bht_gshare = (uint8_t *)malloc(bht_entries * sizeof(uint8_t));
+  int i = 0;
+  for (i = 0; i < bht_entries; i++)
+  {
+    bht_gshare[i] = WN;
+  }
+  ghistory = 0;
+}
+
+uint8_t gshare_predict(uint32_t pc)
+{
+ 
+  uint32_t bht_entries = 1 << ghistoryBits;
+  uint32_t pc_lower_bits = pc & (bht_entries - 1);
+  uint32_t ghistory_lower_bits = ghistory & (bht_entries - 1);
+  uint32_t index = pc_lower_bits ^ ghistory_lower_bits;
+  switch (bht_gshare[index])
+  {
+  case WN:
+    return NOTTAKEN;
+  case SN:
+    return NOTTAKEN;
+  case WT:
+    return TAKEN;
+  case ST:
+    return TAKEN;
+  default:
+    printf("Warning: Undefined state of entry in GSHARE BHT!\n");
+    return NOTTAKEN;
+  }
+}
 
 
 
 void train_gshare(uint32_t pc, uint8_t outcome)
 {
-  // get lower ghistoryBits of pc
+ 
   uint32_t bht_entries = 1 << ghistoryBits;
   uint32_t pc_lower_bits = pc & (bht_entries - 1);
   uint32_t ghistory_lower_bits = ghistory & (bht_entries - 1);
   uint32_t index = pc_lower_bits ^ ghistory_lower_bits;
 
-  // Update state of entry in bht based on outcome
+ 
   switch (bht_gshare[index])
   {
   case WN:
@@ -530,6 +524,7 @@ void cleanup_tournament()
 }
 
 void cleanup_custom()
+cleanup_tournament()
 {
 
 
