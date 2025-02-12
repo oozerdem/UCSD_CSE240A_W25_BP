@@ -449,7 +449,7 @@ void train_custom(uint32_t pc, uint8_t outcome)
     break;
   }
    }
-   else{
+
 
   
 
@@ -471,7 +471,7 @@ void train_custom(uint32_t pc, uint8_t outcome)
     printf("global predict!\n");
     break;
   }
- }
+ 
    
 
 
